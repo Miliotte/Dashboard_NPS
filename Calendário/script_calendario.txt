@@ -1,0 +1,18 @@
+let
+    DataMin = List.Min(fRespostasNPS[DATA_RESPOSTA]),
+    DataMax = List.Max(fRespostasNPS[DATA_RESPOSTA]),
+    QtdeDias = Duration.Days (DataMax - DataMin) + 1,
+    ListarDatas = List.Dates(DataMin, QtdeDias, #duration (1,0,0,0)),
+    ConverterTabelaDatas = Table.FromList(ListarDatas, Splitter.SplitByNothing(), null, null, ExtraValues.Error),
+    #"Tipo Alterado" = Table.TransformColumnTypes(ConverterTabelaDatas,{{"Column1", type date}}),
+    #"Colunas Renomeadas" = Table.RenameColumns(#"Tipo Alterado",{{"Column1", "Data"}}),
+    #"Trimestre Inserido" = Table.AddColumn(#"Colunas Renomeadas", "Trimestre", each Date.QuarterOfYear([Data]), Int64.Type),
+    #"Prefixo Adicionado" = Table.TransformColumns(#"Trimestre Inserido", {{"Trimestre", each "TR0" & Text.From(_, "pt-BR"), type text}}),
+    #"Mês Inserido" = Table.AddColumn(#"Prefixo Adicionado", "Mês", each Date.Month([Data]), Int64.Type),
+    #"Nome do Mês Inserido" = Table.AddColumn(#"Mês Inserido", "Nome do Mês", each Date.MonthName([Data]), type text),
+    #"Colocar Cada Palavra Em Maiúscula" = Table.TransformColumns(#"Nome do Mês Inserido",{{"Nome do Mês", Text.Proper, type text}}),
+    #"Semana do Mês Inserida" = Table.AddColumn(#"Colocar Cada Palavra Em Maiúscula", "Semana do Mês", each Date.WeekOfMonth([Data]), Int64.Type),
+    #"Ano Inserido" = Table.AddColumn(#"Semana do Mês Inserida", "Ano", each Date.Year([Data]), Int64.Type),
+    #"Coluna Condicional Adicionada" = Table.AddColumn(#"Ano Inserido", "Semestre", each if [Mês] <= 6 then "SEM01" else if [Mês] > 6 then "SEM02" else null)
+in
+    #"Coluna Condicional Adicionada"
